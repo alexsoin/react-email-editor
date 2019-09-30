@@ -27,7 +27,7 @@ const Container = styled.div`
 
 const Bar = styled.div`
   flex: 1;
-  background-color: #4169E1;
+  background-color: #D6D9DC;
   color: #FFF;
   padding: 10px;
   display: flex;
@@ -37,6 +37,11 @@ const Bar = styled.div`
     flex: 1;
     font-size: 16px;
     text-align: left;
+    color: #333;
+    font-size: 1.3em;
+    line-height: 1;
+    margin-top: 8px;
+    margin-bottom: 0;
   }
 
   button {
@@ -45,12 +50,35 @@ const Bar = styled.div`
     margin-left: 10px;
     font-size: 14px;
     font-weight: bold;
-    background-color: #000;
+    background-color: #84a616;
     color: #FFF;
     border: 0px;
-    max-width: 150px;
+    max-width: 200px;
     cursor: pointer;
   }
+  .btn--type1 {
+    background-color: #165da6;
+  }
+  #out {
+    display:none;
+  }
+  .custom-file-upload > input[type="file"] {
+    display: none;
+  }
+  .custom-file-upload {
+    flex: 1;
+    padding: 10px;
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #165da6;
+    color: #FFF;
+    border: 0px;
+    max-width: 200px;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.5;
+}
 `
 
 class Demo extends Component {
@@ -61,10 +89,21 @@ class Demo extends Component {
 
         <Container>
           <Bar>
-            <h1>React Email Editor (Demo)</h1>
+            <h1>Конструктор email писем</h1>
 
-            <button onClick={this.saveDesign}>Save Design</button>
-            <button onClick={this.exportHtml}>Export HTML</button>
+            <label className="custom-file-upload">
+              <input type="file"
+              name="myFile"
+              id="myFile"
+              onChange={this.uploadFile} />
+              <span id="upload">Выберите файл...</span>
+            </label>
+            <button className="btn--type1" onClick={this.loadFileDesign}>Загрузить разметку</button>
+
+            
+            <button onClick={this.saveDesign}>Сохранить разметку</button>
+            <button onClick={this.exportHtml}>Сохранить HTML</button>
+            <textarea id="out"></textarea>
           </Bar>
 
           <Example
@@ -77,23 +116,76 @@ class Demo extends Component {
     )
   }
 
+  constructor(props) {
+    super(props)
+    this.uploadFile = this.uploadFile.bind(this);
+  }
+  
+  uploadFile(event) {
+    var fullPath = document.getElementById('myFile').value;
+    if (fullPath) {
+        var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+        var filename = fullPath.substring(startIndex);
+        if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+            filename = filename.substring(1);
+        }
+        console.log(filename);
+        document.getElementById('upload').innerHTML = filename;
+    }
+
+    let file = event.target.files[0];
+    var reader = new FileReader()
+    reader.onload = function() {
+      document.getElementById('out').innerHTML = reader.result
+    }
+    reader.readAsText(file);
+  }
+
+  loadFileDesign = () => {
+    let json = JSON.parse(document.getElementById('out').textContent);
+    this.editor.loadDesign(json);
+  }
+
   onLoad = () => {
     // this.editor.addEventListener('onDesignLoad', this.onDesignLoad)
     this.editor.loadDesign(sample)
   }
 
   saveDesign = () => {
-    this.editor.saveDesign(design => {
-      console.log('saveDesign', design)
-      alert("Design JSON has been logged in your developer console.")
+    this.editor.saveDesign(design => {  
+      let d=new Date();
+      let day=d.getDate();
+      let month=d.getMonth() + 1;
+      let year=d.getFullYear();
+
+      let getDate = day + "_" + month + "_" + year;
+
+      const element = document.createElement("a");
+      const file = new Blob([JSON.stringify(design)], {type: 'json/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = "DesignEmail-"+getDate+".json";
+      document.body.appendChild(element); // Required for this to work in FireFox
+      element.click();
     })
   }
 
   exportHtml = () => {
     this.editor.exportHtml(data => {
+      let d=new Date();
+      let day=d.getDate();
+      let month=d.getMonth() + 1;
+      let year=d.getFullYear();
+
+      let getDate = day + "_" + month + "_" + year;
+      
       const { design, html } = data
-      console.log('exportHtml', html)
-      alert("Output HTML has been logged in your developer console.")
+      
+      const element = document.createElement("a");
+      const file = new Blob([html], {type: 'html/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = "HtmlEmail-"+getDate+".html";
+      document.body.appendChild(element); // Required for this to work in FireFox
+      element.click();
     })
   }
 
